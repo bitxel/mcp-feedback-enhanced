@@ -866,8 +866,7 @@
                 self.refreshPageContent();
 
                 // 3. 重置表單狀態
-                const feedbackInput = window.MCPFeedback.Utils.safeQuerySelector('#combinedFeedbackText');
-                const hasUserInput = feedbackInput && feedbackInput.value.trim().length > 0;
+                const hasUserInput = window.MCPFeedback.Utils.hasUserFeedback();
                 if (!hasUserInput) {
                     self.clearFeedback();
                 } else {
@@ -1120,13 +1119,16 @@
     FeedbackApp.prototype.canSubmitFeedback = function() {
         // 簡化檢查：只檢查WebSocket連接，狀態由服務器端驗證
         const wsReady = this.webSocketManager && this.webSocketManager.isReady();
+        const feedbackState = this.uiManager ? this.uiManager.getFeedbackState() : null;
+        const isWaiting = feedbackState === window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_WAITING;
 
         console.log('🔍 提交檢查:', {
             wsReady: wsReady,
-            sessionId: this.currentSessionId
+            sessionId: this.currentSessionId,
+            feedbackState: feedbackState
         });
 
-        return wsReady;
+        return wsReady && isWaiting;
     };
 
     /**
@@ -1880,8 +1882,7 @@
         const isWaitingForFeedback = currentState === window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_WAITING;
 
         // 如果使用者已經有輸入，避免啟動自動提交倒數
-        const feedbackInput = window.MCPFeedback.Utils.safeQuerySelector('#combinedFeedbackText');
-        const hasUserInput = feedbackInput && feedbackInput.value.trim().length > 0;
+        const hasUserInput = window.MCPFeedback.Utils.hasUserFeedback();
         if (hasUserInput) {
             console.log('⛔ 偵測到使用者輸入，跳過自動提交倒數啟動');
             this.autoSubmitManager.stop();
@@ -1992,10 +1993,10 @@
         // 設定提示詞內容到回饋輸入框
         const feedbackInput = window.MCPFeedback.Utils.safeQuerySelector('#combinedFeedbackText');
         if (feedbackInput) {
-            if (feedbackInput.value.trim().length > 0) {
+            if (window.MCPFeedback.Utils.hasUserFeedback()) {
                 const message = window.i18nManager ?
-                    window.i18nManager.t('autoSubmit.stoppedDueToInput', '當前倒計時已停止') :
-                    '當前倒計時已停止';
+                    window.i18nManager.t('autoSubmit.stoppedDueToInput', 'Countdown stopped. Please submit manually') :
+                    'Countdown stopped. Please submit manually';
                 window.MCPFeedback.Utils.showMessage(message, window.MCPFeedback.Utils.CONSTANTS.MESSAGE_WARNING);
                 this.autoSubmitManager.stop();
                 this.updateAutoSubmitStatus('disabled');
