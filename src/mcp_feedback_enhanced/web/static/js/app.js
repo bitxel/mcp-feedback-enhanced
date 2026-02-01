@@ -1222,9 +1222,9 @@
             });
 
             if (success) {
-                // 重置表單狀態但保留文字內容
+                // 重置表單狀態並清空文字內容
                 if (this.uiManager) {
-                    this.uiManager.resetFeedbackForm(false);  // false 表示不清空文字
+                    this.uiManager.resetFeedbackForm(true);  // true 表示清空文字
                 }
                 // 只清空圖片
                 if (this.imageHandler) {
