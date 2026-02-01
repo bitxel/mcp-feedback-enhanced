@@ -866,7 +866,13 @@
                 self.refreshPageContent();
 
                 // 3. 重置表單狀態
-                self.clearFeedback();
+                const feedbackInput = window.MCPFeedback.Utils.safeQuerySelector('#combinedFeedbackText');
+                const hasUserInput = feedbackInput && feedbackInput.value.trim().length > 0;
+                if (!hasUserInput) {
+                    self.clearFeedback();
+                } else {
+                    console.log('🔒 新會話更新：保留使用者輸入，不清空文字回饋');
+                }
 
                 // 4. 重置回饋狀態為等待中
                 if (self.uiManager) {
@@ -1873,6 +1879,16 @@
         const currentState = this.uiManager ? this.uiManager.getFeedbackState() : null;
         const isWaitingForFeedback = currentState === window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_WAITING;
 
+        // 如果使用者已經有輸入，避免啟動自動提交倒數
+        const feedbackInput = window.MCPFeedback.Utils.safeQuerySelector('#combinedFeedbackText');
+        const hasUserInput = feedbackInput && feedbackInput.value.trim().length > 0;
+        if (hasUserInput) {
+            console.log('⛔ 偵測到使用者輸入，跳過自動提交倒數啟動');
+            this.autoSubmitManager.stop();
+            this.updateAutoSubmitStatus('disabled');
+            return;
+        }
+
         console.log('🔍 當前回饋狀態:', currentState, '是否等待回饋:', isWaitingForFeedback);
 
         // 如果所有條件都滿足，啟動自動提交
@@ -1976,6 +1992,15 @@
         // 設定提示詞內容到回饋輸入框
         const feedbackInput = window.MCPFeedback.Utils.safeQuerySelector('#combinedFeedbackText');
         if (feedbackInput) {
+            if (feedbackInput.value.trim().length > 0) {
+                const message = window.i18nManager ?
+                    window.i18nManager.t('autoSubmit.stoppedDueToInput', '當前倒計時已停止') :
+                    '當前倒計時已停止';
+                window.MCPFeedback.Utils.showMessage(message, window.MCPFeedback.Utils.CONSTANTS.MESSAGE_WARNING);
+                this.autoSubmitManager.stop();
+                this.updateAutoSubmitStatus('disabled');
+                return;
+            }
             feedbackInput.value = prompt.content;
         }
 
